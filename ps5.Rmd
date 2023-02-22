@@ -1,0 +1,337 @@
+---
+title: "rmarkdown_ps5"
+author: "Sarah Tran"
+date: "2023-02-16"
+output: html_document
+---
+
+```{r }
+library(tidyverse)
+```
+
+```{r}
+gap <- read_delim('data/gapminder.csv.bz2')
+```
+
+## Load the Data 
+```{r}
+dim(gap)
+```
+###### There are 13055 rows and 25 columns 
+```{r}
+gap %>% 
+  sample_n(5)
+```
+###### The data looks good, but is missing many values 
+```{r} 
+gap %>% 
+  summarise(total = n_distinct(iso3))
+
+gap %>% 
+  summarise(total = n_distinct(iso2))
+
+gap %>% 
+  summarise(total = n_distinct(name))
+```
+###### There are 253 iso3 codes, 249 iso2 codes, and 250 names. 
+
+```{r}
+
+gap %>% 
+  group_by(iso2) %>% 
+  summarise(n = n_distinct(name)) %>% 
+  arrange(desc(n))
+
+gap %>% 
+  filter(is.na(iso2)) %>% 
+  distinct(name)
+```
+###### Namibia has the most missing values 
+```{r}
+gap %>% 
+  group_by(name) %>% 
+  summarise(n = n_distinct(iso3)) %>% 
+  arrange(desc(n)) %>% 
+  head(3)
+```
+```{r}
+gap %>% 
+  filter(is.na(name)) %>% 
+  distinct(iso3)
+```
+###### Chanisl, GMB, KOS, NLD_Curacao have the most missing values.
+
+```{r}
+gap %>% 
+  filter(!is.na(time)) %>% 
+  arrange() %>% 
+  head()
+```
+```{r}
+gap %>% 
+  filter(!is.na(time)) %>% 
+  arrange() %>% 
+  tail(1)
+```
+###### The minimum year is 1960 and the maximum year is 2019
+
+##Question 1 
+```{r}
+gap %>% 
+  group_by(time) %>% 
+  filter(is.na(co2)) %>% 
+  summarise(total = sum(is.na(co2))) %>% 
+  arrange() 
+```
+###### 1960 and 1961 has the most missing values 
+
+```{r}
+gap %>% 
+  group_by(time) %>% 
+  filter(is.na(co2_PC)) %>% 
+  summarise(total = sum(is.na(co2_PC))) %>% 
+  arrange() %>% 
+  head(2)
+```
+###### 1960 and 1961 has the most missing values 
+
+##Question 2 
+
+```{r}
+ gap %>% 
+  filter(name %in% c("Virgin Islands (U.S.)", "China", "India", "Yemen"),
+         !is.na(co2)) %>% 
+  ggplot() +
+  geom_col(aes(x =  time, y = co2)) +
+   labs(title = "Growth of Co2 Overtime",
+       x = "Time",
+       y = "Co2 ")
+      
+```
+
+###### As demonstrated by the bar graph, CO2 emmisions have been on a constant rise since rougly 1970. This indicates that as each year progresses, these countries have been emitting and increased amount of CO2. The grapgh additionally shows that this there has a been a steep and even greater increase during the 2000s. 
+
+##Question 3
+
+```{r}
+ gap %>% 
+  filter(name %in% c("Virgin Islands (U.S.)", "China", "India", "Yemen"),
+         !is.na(co2_PC)) %>% 
+  ggplot() +
+  geom_col(aes(x =  time, y = co2_PC)) +
+   labs(title = "Growth of Co2 Per Capita Overtime",
+       x = "Time",
+       y = "Co2 per capita")
+      
+```
+##### CO2 emissions per capita is a calculation of the C02 contribution of an average citizen. The bar grapgh indicates that an average citizen is emitting more CO2 then they did the previous year.Similarly to the CO2 bar plot, the greatest increase in CO2 emissions is during the 2000s. 
+
+## Question 4 
+
+```{r}
+gap %>% 
+  group_by(region, time) %>% 
+  filter(!is.na(co2_PC),
+         !is.na(region),
+         time %in% c(1960, 2016)) %>% 
+  summarize(avg_co2 = mean(co2_PC, na.rm = TRUE)) 
+```
+Based on this table, it is evident that, typically, continents are emmiting more CO2 in 2016 then they did in 1960. Many continents have nearly doubled the amount of Co2 they emmit. The one exception to this pattern is the Americas', who emmites only half of the amount of what they emitted in 1960. 
+
+## Question 5 
+```{r}
+options(dplyr.summarise.inform = FALSE)
+
+plot_data <- gap %>% 
+  group_by(region, time) %>% 
+  filter(!is.na(co2_PC),
+         time %in% c(1960, 2016),
+         !is.na(region)) %>% 
+  summarize(avg_co2 = mean(co2_PC, na.rm = TRUE)) 
+```
+
+```{r}
+ggplot(plot_data, aes(region, avg_co2, col=factor(time), fill=factor(time), na.rm=TRUE)) +
+  geom_bar(stat = "identity", position = "dodge", na.rm = TRUE) +
+  labs(title = "Average CO2 Levels by Region and Time",
+       x = "Region",
+       y = "Average CO2 Levels",
+       fill = "Time",
+       color = "Time")
+```
+###### As demonstrated by the bar plot, regions are emitting more CO2 per capita than they did in 1960. The exception to this observation is the Americas. 
+
+
+## Question #6: Which countries are the three largest, and three smallest CO2 emitters (in terms of CO2 per
+##capita) in 2019 for each continent? (Assume region is continent).
+
+```{r}
+gap %>% 
+  filter(time == 2016, !is.na(region), !is.na(name), !is.na(co2_PC)) %>% 
+  group_by(region) %>% 
+  filter(dense_rank(desc(co2_PC)) <= 3 |
+           dense_rank(co2_PC) <=3) %>% 
+  select(region, name, co2_PC) %>% 
+  arrange(desc(co2_PC), .by_group = TRUE) 
+```
+
+## GDP per capita
+
+## Question 1
+
+```{r}
+LE_GDP <- gap %>% 
+  group_by(region) %>% 
+  filter(time == 1960,
+         !is.na(GDP_PC),
+         !is.na(name),
+         !is.na(lifeExpectancy)) 
+```
+             
+```{r}
+LE_GDP %>% 
+  ggplot(aes(lifeExpectancy, GDP_PC, col = name)) +
+    geom_point(aes(size = totalPopulation)) +
+    theme(legend.position="none") +
+      labs(title = "GDP PC vs Life Expectancy by Country",
+       x = "Life Expectancy",
+       y = "GDP Per Capita",
+       fill = "name",
+       color = "name")
+```
+###### According to the scatter plot, there is a positive relationship between life expectancy and GDP per capita. Regions that are emitting more co2 per capita are experience greater life expectancy. This is prevalent in countries that are medium size. 
+
+## Question 2
+```{r}
+LE_GDP_2019 <- gap %>% 
+  group_by(region) %>% 
+  filter(time == 2019,
+         !is.na(GDP_PC),
+         !is.na(name),
+         !is.na(lifeExpectancy)) 
+```
+
+```{r}
+LE_GDP_2019 %>% 
+  ggplot(aes(lifeExpectancy, GDP_PC, col = name)) +
+    geom_point(aes(size = totalPopulation)) +
+    theme(legend.position="none") +
+     labs(title = "GDP PC vs Life Expectancy by Country",
+       x = "Life Expectancy",
+       y = "GDP Per Capita",
+       fill = "name",
+       color = "name")
+```
+## How has the world developed the last 60 years? 
+
+###### Since 1960, there are more regions, the population size of the regions has increase, and life expectency has increased. Like 1960, there is a positive relationship between life expectancy and GDP per capita. Indicating that coutries with higher GDP experience greater life expectancy. The positive relationship mainly exists when life expectancy is greater than 70. 
+
+## Question 4
+```{r}
+gap %>% 
+  select(region, time, lifeExpectancy) %>% 
+  group_by(region) %>% 
+  filter(time == 1960,
+         !is.na(lifeExpectancy),
+         !is.na(region)) %>% 
+  summarise(avg_le = mean(lifeExpectancy))
+```
+
+```{r}
+gap %>% 
+  select(region, time, lifeExpectancy) %>% 
+  group_by(region) %>% 
+  filter(time == 2019,
+         !is.na(lifeExpectancy),
+         !is.na(region)) %>% 
+  summarise(avg_le = mean(lifeExpectancy))
+```
+###### This information does fit the figures. As demonstrated in the plots, regions are experiencing longer life expectancy.
+
+
+## Question 5
+
+```{r}
+gap %>% 
+  select(region, time, lifeExpectancy) %>% 
+  group_by(region, time) %>% 
+  filter(!is.na(lifeExpectancy),
+         !is.na(region),
+         time %in% c(1960, 2019)) %>% 
+  summarise(average_le_growth = mean(lifeExpectancy)) %>% 
+  group_by(region) %>% 
+  filter(!is.na(average_le_growth)) %>% 
+  summarise(prev = lag(average_le_growth), 
+         growth = (average_le_growth - prev)) %>% 
+  arrange(desc(growth)) %>% 
+  head(5)
+```
+
+## Question 6 
+
+```{r}
+hist <- gap %>% 
+  filter(time %in% c(1960, 2019),
+        !is.na(GDP_PC)) 
+```
+
+```{r}
+ggplot(hist, aes(GDP_PC, color = factor(time), fill=factor(time))) +
+  geom_histogram(binwidth = 10000, position = "dodge") +
+   labs(title = "GDP Per Capita by Region and Time",
+       x = "Region",
+       y = "Average CO2 Levels",
+       fill = "time",
+       color = "time")
+```  
+###### As demonstrated on the plot, GDP per capita in 1960 has increased in 2019. 
+
+
+##Question 7
+```{r}
+gap %>% 
+  select(name, time, lifeExpectancy) %>% 
+  group_by(name) %>% 
+  filter(time == 1960,
+         !is.na(lifeExpectancy),
+         !is.na(name)) %>% 
+  arrange(rank(desc(lifeExpectancy))) %>% 
+  head(17)
+```
+
+```{r}
+gap %>% 
+  select(name, time, lifeExpectancy) %>% 
+  group_by(name) %>% 
+  filter(time == 2019,
+         !is.na(lifeExpectancy),
+         !is.na(name)) %>% 
+  arrange(rank(desc(lifeExpectancy))) %>% 
+  head(50)
+```
+
+
+```{r}
+rank <- gap %>% 
+  select(name, time, lifeExpectancy) %>% 
+  group_by(name) %>% 
+  filter(time == 1960,
+         !is.na(lifeExpectancy),
+         !is.na(name)) %>% 
+  arrange(rank(desc(lifeExpectancy))) %>% 
+  mutate(relative_rank = rank(lifeExpectancy)/length(name))
+```
+
+```{r}
+rank %>% 
+  ungroup %>% 
+  mutate(relative_rank = rank(desc(lifeExpectancy))/n()) %>% 
+  filter( name == "United States of America")
+```
+  
+## I spent 8 hours on the problem set
+
+
+
+
+
