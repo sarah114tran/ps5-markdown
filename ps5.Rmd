@@ -309,7 +309,7 @@ gap %>%
   arrange(rank(desc(lifeExpectancy))) %>% 
   head(50)
 ```
-
+##### America is now ranked 46th place
 
 ```{r}
 rank <- gap %>% 
@@ -328,7 +328,9 @@ rank %>%
   mutate(relative_rank = rank(desc(lifeExpectancy))/n()) %>% 
   filter( name == "United States of America")
 ```
-  
+##### The relative rank of America is 0.0904.   
+
+
 ## I spent 8 hours on the problem set
 
 
